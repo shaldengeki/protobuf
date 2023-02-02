@@ -270,27 +270,27 @@ module BasicTest
 
     def test_type_errors
       m = TestMessage.new
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m.optional_int32 = "hello"
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m.optional_string = 42
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m.optional_string = nil
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m.optional_bool = 42
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m.optional_msg = TestMessage.new  # expects TestMessage2
       end
 
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m.repeated_int32.push "hello"
       end
 
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m.repeated_msg.push TestMessage.new
       end
     end
@@ -326,69 +326,69 @@ module BasicTest
 
     def test_rptfield_int32
       l = Google::Protobuf::RepeatedField.new(:int32)
-      assert l.count == 0
+      assert_equal 0, l.count
       l = Google::Protobuf::RepeatedField.new(:int32, [1, 2, 3])
-      assert l.count == 3
+      assert_equal 3, l.count
       assert_equal [1, 2, 3], l
       assert_equal l, [1, 2, 3]
       l.push 4
-      assert l == [1, 2, 3, 4]
+      assert_equal [1, 2, 3, 4], l
       dst_list = []
       l.each { |val| dst_list.push val }
-      assert dst_list == [1, 2, 3, 4]
-      assert l.to_a == [1, 2, 3, 4]
-      assert l[0] == 1
-      assert l[3] == 4
+      assert_equal [1, 2, 3, 4], dst_list
+      assert_equal [1, 2, 3, 4], l.to_a
+      assert_equal 1, l[0]
+      assert_equal 4, l[3]
       l[0] = 5
-      assert l == [5, 2, 3, 4]
+      assert_equal [5, 2, 3, 4], l
 
       l2 = l.dup
-      assert l == l2
+      assert_equal l2, l
       assert l.object_id != l2.object_id
       l2.push 6
-      assert l.count == 4
-      assert l2.count == 5
+      assert_equal 4, l.count
+      assert_equal 5, l2.count
 
-      assert l.inspect == '[5, 2, 3, 4]'
+      assert_equal '[5, 2, 3, 4]', l.inspect
 
       l.concat([7, 8, 9])
-      assert l == [5, 2, 3, 4, 7, 8, 9]
-      assert l.pop == 9
-      assert l == [5, 2, 3, 4, 7, 8]
+      assert_equal [5, 2, 3, 4, 7, 8, 9], l
+      assert_equal 9, l.pop
+      assert_equal [5, 2, 3, 4, 7, 8], l
 
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m = TestMessage.new
         l.push m
       end
 
       m = TestMessage.new
       m.repeated_int32 = l
-      assert m.repeated_int32 == [5, 2, 3, 4, 7, 8]
-      assert m.repeated_int32.object_id == l.object_id
+      assert_equal [5, 2, 3, 4, 7, 8], m.repeated_int32
+      assert_equal l.object_id, m.repeated_int32.object_id
       l.push 42
-      assert m.repeated_int32.pop == 42
+      assert_equal 42, m.repeated_int32.pop
 
       l3 = l + l.dup
-      assert l3.count == l.count * 2
+      assert_equal l.count * 2, l3.count
       l.count.times do |i|
-        assert l3[i] == l[i]
-        assert l3[l.count + i] == l[i]
+        assert_equal l[i], l3[i]
+        assert_equal l[i], l3[l.count + i]
       end
 
       l.clear
-      assert l.count == 0
+      assert_equal 0, l.count
       l += [1, 2, 3, 4]
       l.replace([5, 6, 7, 8])
-      assert l == [5, 6, 7, 8]
+      assert_equal [5, 6, 7, 8], l
 
       l4 = Google::Protobuf::RepeatedField.new(:int32)
       l4[5] = 42
-      assert l4 == [0, 0, 0, 0, 0, 42]
+      assert_equal [0, 0, 0, 0, 0, 42], l4
 
       l4 << 100
-      assert l4 == [0, 0, 0, 0, 0, 42, 100]
+      assert_equal [0, 0, 0, 0, 0, 42, 100], l4
       l4 << 101 << 102
-      assert l4 == [0, 0, 0, 0, 0, 42, 100, 101, 102]
+      assert_equal [0, 0, 0, 0, 0, 42, 100, 101, 102], l4
     end
 
     def test_parent_rptfield
@@ -406,10 +406,10 @@ module BasicTest
       l = Google::Protobuf::RepeatedField.new(:message, TestMessage)
       l.push TestMessage.new
       assert l.count == 1
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         l.push TestMessage2.new
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         l.push 42
       end
 
@@ -440,14 +440,14 @@ module BasicTest
       l.push :A
       l.push :B
       l.push :C
-      assert l.count == 3
+      assert_equal 3, l.count
       assert_raise RangeError do
         l.push :D
       end
-      assert l[0] == :A
+      assert_equal :A, l[0]
 
       l.push 4
-      assert l[3] == 4
+      assert_equal 4, l[3]
     end
 
     def test_rptfield_initialize
@@ -537,7 +537,7 @@ module BasicTest
       assert m.length == 0
       assert m == {}
 
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m[1] = 1
       end
       assert_raise RangeError do
@@ -558,7 +558,7 @@ module BasicTest
       assert_raise RangeError do
         m[0x8000_0000] = 1
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m["asdf"] = 1
       end
 
@@ -567,7 +567,7 @@ module BasicTest
       assert_raise RangeError do
         m[0x1_0000_0000_0000_0000] = 1
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m["asdf"] = 1
       end
 
@@ -592,16 +592,16 @@ module BasicTest
       m = Google::Protobuf::Map.new(:bool, :int32)
       m[true] = 1
       m[false] = 2
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m[1] = 1
       end
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m["asdf"] = 1
       end
 
       m = Google::Protobuf::Map.new(:string, :int32)
       m["asdf"] = 1
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m[1] = 1
       end
       assert_raise Encoding::UndefinedConversionError do
@@ -614,7 +614,7 @@ module BasicTest
       m[bytestring] = 1
       # Allowed -- we will automatically convert to ASCII-8BIT.
       m["asdf"] = 1
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m[1] = 1
       end
     end
@@ -622,7 +622,7 @@ module BasicTest
     def test_map_msg_enum_valuetypes
       m = Google::Protobuf::Map.new(:string, :message, TestMessage)
       m["asdf"] = TestMessage.new
-      assert_raise TypeError do
+      assert_raise Google::Protobuf::TypeError do
         m["jkl;"] = TestMessage2.new
       end
 
@@ -630,17 +630,17 @@ module BasicTest
         :string, :message, TestMessage,
         { "a" => TestMessage.new(:optional_int32 => 42),
           "b" => TestMessage.new(:optional_int32 => 84) })
-      assert m.length == 2
+      assert_equal 2, m.length
       assert m.values.map{|msg| msg.optional_int32}.sort == [42, 84]
 
       m = Google::Protobuf::Map.new(:string, :enum, TestEnum,
                                     { "x" => :A, "y" => :B, "z" => :C })
-      assert m.length == 3
-      assert m["z"] == :C
+      assert_equal 3, m.length
+      assert_equal :C, m["z"]
       m["z"] = 2
-      assert m["z"] == :B
+      assert_equal :B, m["z"]
       m["z"] = 4
-      assert m["z"] == 4
+      assert_equal 4, m["z"]
       assert_raise RangeError do
         m["z"] = :Z
       end
