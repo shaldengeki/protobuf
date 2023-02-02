@@ -20,7 +20,7 @@ class Enum extends \Google\Protobuf\Internal\Message
      *
      * Generated from protobuf field <code>string name = 1;</code>
      */
-    private $name = '';
+    protected $name = '';
     /**
      * Enum value definitions.
      *
@@ -38,17 +38,35 @@ class Enum extends \Google\Protobuf\Internal\Message
      *
      * Generated from protobuf field <code>.google.protobuf.SourceContext source_context = 4;</code>
      */
-    private $source_context = null;
+    protected $source_context = null;
     /**
      * The source syntax.
      *
      * Generated from protobuf field <code>.google.protobuf.Syntax syntax = 5;</code>
      */
-    private $syntax = 0;
+    protected $syntax = 0;
 
-    public function __construct() {
+    /**
+     * Constructor.
+     *
+     * @param array $data {
+     *     Optional. Data for populating the Message object.
+     *
+     *     @type string $name
+     *           Enum type name.
+     *     @type array<\Google\Protobuf\EnumValue>|\Google\Protobuf\Internal\RepeatedField $enumvalue
+     *           Enum value definitions.
+     *     @type array<\Google\Protobuf\Option>|\Google\Protobuf\Internal\RepeatedField $options
+     *           Protocol buffer options.
+     *     @type \Google\Protobuf\SourceContext $source_context
+     *           The source context.
+     *     @type int $syntax
+     *           The source syntax.
+     * }
+     */
+    public function __construct($data = NULL) {
         \GPBMetadata\Google\Protobuf\Type::initOnce();
-        parent::__construct();
+        parent::__construct($data);
     }
 
     /**
@@ -92,7 +110,7 @@ class Enum extends \Google\Protobuf\Internal\Message
      * Enum value definitions.
      *
      * Generated from protobuf field <code>repeated .google.protobuf.EnumValue enumvalue = 2;</code>
-     * @param \Google\Protobuf\EnumValue[]|\Google\Protobuf\Internal\RepeatedField $var
+     * @param array<\Google\Protobuf\EnumValue>|\Google\Protobuf\Internal\RepeatedField $var
      * @return $this
      */
     public function setEnumvalue($var)
@@ -118,7 +136,7 @@ class Enum extends \Google\Protobuf\Internal\Message
      * Protocol buffer options.
      *
      * Generated from protobuf field <code>repeated .google.protobuf.Option options = 3;</code>
-     * @param \Google\Protobuf\Option[]|\Google\Protobuf\Internal\RepeatedField $var
+     * @param array<\Google\Protobuf\Option>|\Google\Protobuf\Internal\RepeatedField $var
      * @return $this
      */
     public function setOptions($var)
@@ -133,11 +151,21 @@ class Enum extends \Google\Protobuf\Internal\Message
      * The source context.
      *
      * Generated from protobuf field <code>.google.protobuf.SourceContext source_context = 4;</code>
-     * @return \Google\Protobuf\SourceContext
+     * @return \Google\Protobuf\SourceContext|null
      */
     public function getSourceContext()
     {
         return $this->source_context;
+    }
+
+    public function hasSourceContext()
+    {
+        return isset($this->source_context);
+    }
+
+    public function clearSourceContext()
+    {
+        unset($this->source_context);
     }
 
     /**

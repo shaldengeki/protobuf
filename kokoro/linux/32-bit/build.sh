@@ -4,14 +4,26 @@
 # running the "pull request 32" project:
 #
 # This script selects a specific Dockerfile (for building a Docker image) and
-# a script to run inside that image.  Then we delegate to the general
-# build_and_run_docker.sh script.
+# a script to run inside that image.
+
+set -ex
 
 # Change to repo root
 cd $(dirname $0)/../../..
+GIT_REPO_ROOT=$(pwd)
 
-export DOCKERFILE_DIR=kokoro/linux/32-bit
-export DOCKER_RUN_SCRIPT=kokoro/linux/pull_request_in_docker.sh
-export OUTPUT_DIR=testoutput
-export TEST_SET="php_all_32"
-./kokoro/linux/build_and_run_docker.sh
+CONTAINER_IMAGE=us-docker.pkg.dev/protobuf-build/containers/test/linux/32bit@sha256:6651a299483f7368876db7aed0802ad4ebf038d626d8995ba7df08978ff43210
+
+git submodule update --init --recursive
+use_bazel.sh 5.1.1
+sudo ./kokoro/common/setup_kokoro_environment.sh
+./regenerate_stale_files.sh
+
+gcloud components update --quiet
+gcloud auth configure-docker us-docker.pkg.dev --quiet
+
+docker run \
+  "$@" \
+  -v $GIT_REPO_ROOT:/workspace \
+  $CONTAINER_IMAGE \
+  bash -l "/workspace/kokoro/linux/32-bit/test_php.sh"

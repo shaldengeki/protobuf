@@ -30,13 +30,12 @@
 
 package com.google.protobuf;
 
+import junit.framework.TestCase;
 import protobuf_unittest.lite_equals_and_hash.LiteEqualsAndHash.Bar;
 import protobuf_unittest.lite_equals_and_hash.LiteEqualsAndHash.BarPrime;
 import protobuf_unittest.lite_equals_and_hash.LiteEqualsAndHash.Foo;
 import protobuf_unittest.lite_equals_and_hash.LiteEqualsAndHash.TestOneofEquals;
 import protobuf_unittest.lite_equals_and_hash.LiteEqualsAndHash.TestRecursiveOneof;
-
-import junit.framework.TestCase;
 
 /**
  * Test generate equal and hash methods for the lite runtime.
@@ -75,7 +74,7 @@ public class LiteEqualsAndHashTest extends TestCase {
     assertEquals(foo1a, foo1b);
     assertEquals(foo1a.hashCode(), foo1b.hashCode());
 
-    // Check that a diffeent object is not equal.
+    // Check that a different object is not equal.
     assertFalse(foo1a.equals(foo2));
 
     // Check that two objects which have different types but the same field values are not
@@ -120,6 +119,6 @@ public class LiteEqualsAndHashTest extends TestCase {
 
   public void testRecursiveHashcode() {
     // This tests that we don't infinite loop.
-    TestRecursiveOneof.getDefaultInstance().hashCode();
+    int unused = TestRecursiveOneof.getDefaultInstance().hashCode();
   }
 }

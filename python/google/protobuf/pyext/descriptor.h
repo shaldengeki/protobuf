@@ -33,9 +33,10 @@
 #ifndef GOOGLE_PROTOBUF_PYTHON_CPP_DESCRIPTOR_H__
 #define GOOGLE_PROTOBUF_PYTHON_CPP_DESCRIPTOR_H__
 
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#include <google/protobuf/descriptor.h>
+#include "google/protobuf/descriptor.h"
 
 namespace google {
 namespace protobuf {
@@ -81,7 +82,6 @@ const FieldDescriptor* PyFieldDescriptor_AsDescriptor(PyObject* obj);
 const EnumDescriptor* PyEnumDescriptor_AsDescriptor(PyObject* obj);
 const FileDescriptor* PyFileDescriptor_AsDescriptor(PyObject* obj);
 const ServiceDescriptor* PyServiceDescriptor_AsDescriptor(PyObject* obj);
-const MethodDescriptor* PyMethodDescriptor_AsDescriptor(PyObject* obj);
 
 // Returns the raw C++ pointer.
 const void* PyDescriptor_AsVoidPtr(PyObject* obj);
@@ -100,6 +100,6 @@ bool InitDescriptor();
 
 }  // namespace python
 }  // namespace protobuf
-
 }  // namespace google
+
 #endif  // GOOGLE_PROTOBUF_PYTHON_CPP_DESCRIPTOR_H__

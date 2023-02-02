@@ -1,4 +1,4 @@
-﻿#region Copyright notice and license
+#region Copyright notice and license
 // Protocol Buffers - Google's data interchange format
 // Copyright 2015 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
@@ -49,7 +49,7 @@ namespace Google.Protobuf.WellKnownTypes
         /// </summary>
         /// <remarks>
         /// <para>
-        /// This is always just the last part of the URL, after the final slash. No validation of 
+        /// This is always just the last part of the URL, after the final slash. No validation of
         /// anything before the trailing slash is performed. If the type URL does not include a slash,
         /// an empty string is returned rather than an exception being thrown; this won't match any types,
         /// and the calling code is probably in a better position to give a meaningful error.
@@ -65,6 +65,17 @@ namespace Google.Protobuf.WellKnownTypes
             ProtoPreconditions.CheckNotNull(typeUrl, nameof(typeUrl));
             int lastSlash = typeUrl.LastIndexOf('/');
             return lastSlash == -1 ? "" : typeUrl.Substring(lastSlash + 1);
+        }
+
+        /// <summary>
+        /// Returns a bool indictating whether this Any message is of the target message type
+        /// </summary>
+        /// <param name="descriptor">The descriptor of the message type</param>
+        /// <returns><c>true</c> if the type name matches the descriptor's full name or <c>false</c> otherwise</returns>
+        public bool Is(MessageDescriptor descriptor)
+        {
+            ProtoPreconditions.CheckNotNull(descriptor, nameof(descriptor));
+            return GetTypeName(TypeUrl) == descriptor.FullName;
         }
 
         /// <summary>
@@ -101,12 +112,32 @@ namespace Google.Protobuf.WellKnownTypes
             T target = new T();
             if (GetTypeName(TypeUrl) != target.Descriptor.FullName)
             {
-                result = default(T); // Can't use null as there's no class constraint, but this always *will* be null in real usage.
+                result = default; // Can't use null as there's no class constraint, but this always *will* be null in real usage.
                 return false;
             }
             target.MergeFrom(Value);
             result = target;
             return true;
+        }
+
+        /// <summary>
+        /// Attempts to unpack the content of this Any message into one of the message types
+        /// in the given type registry, based on the type URL.
+        /// </summary>
+        /// <param name="registry">The type registry to consult for messages.</param>
+        /// <returns>The unpacked message, or <c>null</c> if no matching message was found.</returns>
+        public IMessage Unpack(TypeRegistry registry)
+        {
+            string typeName = GetTypeName(TypeUrl);
+            MessageDescriptor descriptor = registry.Find(typeName);
+            if (descriptor == null)
+            {
+                return null;
+            }
+
+            var message = descriptor.Parser.CreateTemplate();
+            message.MergeFrom(Value);
+            return message;
         }
 
         /// <summary>
