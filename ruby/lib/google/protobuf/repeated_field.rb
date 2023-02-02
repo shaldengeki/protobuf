@@ -79,12 +79,25 @@ module Google
 
 
       def first(n=nil)
-        n ? self[0..n] : self[0]
+        if n.nil?
+          return self[0]
+        elsif n < 0
+          raise ArgumentError, "negative array size"
+        else
+          return self[0...n]
+        end
       end
 
 
       def last(n=nil)
-        n ? self[(self.size-n-1)..-1] : self[-1]
+        if n.nil?
+          return self[-1]
+        elsif n < 0
+          raise ArgumentError, "negative array size"
+        else
+          start = [self.size-n, 0].max
+          return self[start...self.size]
+        end
       end
 
 
@@ -150,12 +163,12 @@ module Google
       end
 
 
-      %w(delete delete_at delete_if shift slice! unshift).each do |method_name|
+      %w(delete delete_at shift slice! unshift).each do |method_name|
         define_array_wrapper_method(method_name)
       end
 
 
-      %w(collect! compact! fill flatten! insert reverse!
+      %w(collect! compact! delete_if fill flatten! insert reverse!
         rotate! select! shuffle! sort! sort_by! uniq!).each do |method_name|
         define_array_wrapper_with_result_method(method_name)
       end

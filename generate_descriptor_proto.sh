@@ -7,21 +7,13 @@
 # generate.
 #
 # HINT:  Flags passed to generate_descriptor_proto.sh will be passed directly
-#   to make when building protoc.  This is particularly useful for passing
+#   to bazel when building protoc.  This is particularly useful for passing
 #   -j4 to run 4 jobs simultaneously.
 
 if test ! -e src/google/protobuf/stubs/common.h; then
   cat >&2 << __EOF__
 Could not find source code.  Make sure you are running this script from the
 root of the distribution tree.
-__EOF__
-  exit 1
-fi
-
-if test ! -e src/Makefile; then
-  cat >&2 << __EOF__
-Could not find src/Makefile.  You must run ./configure (and perhaps
-./autogen.sh) first.
 __EOF__
   exit 1
 fi
@@ -51,7 +43,7 @@ while [ $# -gt 0 ]; do
   case $1 in
     --bootstrap_protoc)
       BOOTSTRAP_PROTOC=$2
-      shift
+      shift 2
       ;;
     *)
       break
@@ -70,16 +62,16 @@ do
     PROTOC=$BOOTSTRAP_PROTOC
     BOOTSTRAP_PROTOC=""
   else
-    make $@ protoc
+    bazel build $@ //:protoc
     if test $? -ne 0; then
       echo "Failed to build protoc."
       exit 1
     fi
-    PROTOC="./protoc"
+    PROTOC="../bazel-bin/protoc"
   fi
 
-  $PROTOC --cpp_out=dllexport_decl=LIBPROTOBUF_EXPORT:$TMP ${RUNTIME_PROTO_FILES[@]} && \
-  $PROTOC --cpp_out=dllexport_decl=LIBPROTOC_EXPORT:$TMP ${COMPILER_PROTO_FILES[@]}
+  $PROTOC --cpp_out=dllexport_decl=PROTOBUF_EXPORT:$TMP ${RUNTIME_PROTO_FILES[@]} && \
+  $PROTOC --cpp_out=dllexport_decl=PROTOC_EXPORT:$TMP ${COMPILER_PROTO_FILES[@]}
 
   for PROTO_FILE in ${RUNTIME_PROTO_FILES[@]} ${COMPILER_PROTO_FILES[@]}; do
     BASE_NAME=${PROTO_FILE%.*}

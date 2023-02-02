@@ -37,6 +37,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -63,13 +64,13 @@ namespace Google.Protobuf
         private static readonly Regex DurationRegex = new Regex(@"^(?<sign>-)?(?<int>[0-9]{1,12})(?<subseconds>\.[0-9]{1,9})?s$", FrameworkPortability.CompiledRegexWhereAvailable);
         private static readonly int[] SubsecondScalingFactors = { 0, 100000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1 };
         private static readonly char[] FieldMaskPathSeparators = new[] { ',' };
+        private static readonly EnumDescriptor NullValueDescriptor = StructReflection.Descriptor.EnumTypes.Single(ed => ed.ClrType == typeof(NullValue));
 
         private static readonly JsonParser defaultInstance = new JsonParser(Settings.Default);
 
         // TODO: Consider introducing a class containing parse state of the parser, tokenizer and depth. That would simplify these handlers
         // and the signatures of various methods.
-        private static readonly Dictionary<string, Action<JsonParser, IMessage, JsonTokenizer>>
-            WellKnownTypeHandlers = new Dictionary<string, Action<JsonParser, IMessage, JsonTokenizer>>
+        private static readonly Dictionary<string, Action<JsonParser, IMessage, JsonTokenizer>> WellKnownTypeHandlers = new()
         {
             { Timestamp.Descriptor.FullName, (parser, message, tokenizer) => MergeTimestamp(message, tokenizer.Next()) },
             { Duration.Descriptor.FullName, (parser, message, tokenizer) => MergeDuration(message, tokenizer.Next()) },
@@ -110,7 +111,7 @@ namespace Google.Protobuf
         /// <param name="settings">The settings.</param>
         public JsonParser(Settings settings)
         {
-            this.settings = settings;
+            this.settings = ProtoPreconditions.CheckNotNull(settings, nameof(settings));
         }
 
         /// <summary>
@@ -154,8 +155,7 @@ namespace Google.Protobuf
             }
             if (message.Descriptor.IsWellKnownType)
             {
-                Action<JsonParser, IMessage, JsonTokenizer> handler;
-                if (WellKnownTypeHandlers.TryGetValue(message.Descriptor.FullName, out handler))
+                if (WellKnownTypeHandlers.TryGetValue(message.Descriptor.FullName, out Action<JsonParser, IMessage, JsonTokenizer> handler))
                 {
                     handler(this, message, tokenizer);
                     return;
@@ -185,8 +185,7 @@ namespace Google.Protobuf
                     throw new InvalidOperationException("Unexpected token type " + token.Type);
                 }
                 string name = token.StringValue;
-                FieldDescriptor field;
-                if (jsonFieldMap.TryGetValue(name, out field))
+                if (jsonFieldMap.TryGetValue(name, out FieldDescriptor field))
                 {
                     if (field.ContainingOneof != null)
                     {
@@ -221,10 +220,11 @@ namespace Google.Protobuf
             if (token.Type == JsonToken.TokenType.Null)
             {
                 // Clear the field if we see a null token, unless it's for a singular field of type
-                // google.protobuf.Value.
+                // google.protobuf.Value or google.protobuf.NullValue.
                 // Note: different from Java API, which just ignores it.
                 // TODO: Bring it more in line? Discuss...
-                if (field.IsMap || field.IsRepeated || !IsGoogleProtobufValueField(field))
+                if (field.IsMap || field.IsRepeated ||
+                    !(IsGoogleProtobufValueField(field) || IsGoogleProtobufNullValueField(field)))
                 {
                     field.Accessor.Clear(message);
                     return;
@@ -264,11 +264,12 @@ namespace Google.Protobuf
                     return;
                 }
                 tokenizer.PushBack(token);
-                if (token.Type == JsonToken.TokenType.Null)
+                object value = ParseSingleValue(field, tokenizer);
+                if (value == null)
                 {
                     throw new InvalidProtocolBufferException("Repeated field elements cannot be null");
                 }
-                list.Add(ParseSingleValue(field, tokenizer));
+                list.Add(value);
             }
         }
 
@@ -299,11 +300,7 @@ namespace Google.Protobuf
                 }
                 object key = ParseMapKey(keyField, token.StringValue);
                 object value = ParseSingleValue(valueField, tokenizer);
-                if (value == null)
-                {
-                    throw new InvalidProtocolBufferException("Map values must not be null");
-                }
-                dictionary[key] = value;
+                dictionary[key] = value ?? throw new InvalidProtocolBufferException("Map values must not be null");
             }
         }
 
@@ -311,6 +308,12 @@ namespace Google.Protobuf
         {
             return field.FieldType == FieldType.Message &&
                 field.MessageType.FullName == Value.Descriptor.FullName;
+        }
+
+        private static bool IsGoogleProtobufNullValueField(FieldDescriptor field)
+        {
+            return field.FieldType == FieldType.Enum &&
+                field.EnumType.FullName == NullValueDescriptor.FullName;
         }
 
         private object ParseSingleValue(FieldDescriptor field, JsonTokenizer tokenizer)
@@ -323,6 +326,10 @@ namespace Google.Protobuf
                 if (IsGoogleProtobufValueField(field))
                 {
                     return Value.ForNull();
+                }
+                if (IsGoogleProtobufNullValueField(field))
+                {
+                    return NullValue.NullValue;
                 }
                 return null;
             }
@@ -635,19 +642,15 @@ namespace Google.Protobuf
                             {
                                 return float.NaN;
                             }
-                            if (value > float.MaxValue || value < float.MinValue)
+                            float converted = (float) value;
+                            // If the value is out of range of float, the cast representation will be infinite.
+                            // If the original value was infinite as well, that's fine - we'll return the 32-bit
+                            // version (with the correct sign).
+                            if (float.IsInfinity(converted) && !double.IsInfinity(value))
                             {
-                                if (double.IsPositiveInfinity(value))
-                                {
-                                    return float.PositiveInfinity;
-                                }
-                                if (double.IsNegativeInfinity(value))
-                                {
-                                    return float.NegativeInfinity;
-                                }
                                 throw new InvalidProtocolBufferException($"Value out of range: {value}");
                             }
-                            return (float) value;
+                            return converted;
                         case FieldType.Enum:
                             CheckInteger(value);
                             // Just return it as an int, and let the CLR convert it.
@@ -673,7 +676,7 @@ namespace Google.Protobuf
             if (value != Math.Floor(value))
             {
                 throw new InvalidProtocolBufferException($"Value not an integer: {value}");
-            }            
+            }
         }
 
         private static object ParseSingleStringValue(FieldDescriptor field, string text)
@@ -839,7 +842,7 @@ namespace Google.Protobuf
                 if (secondsToAdd < 0 && nanosToAdd > 0)
                 {
                     secondsToAdd++;
-                    nanosToAdd = nanosToAdd - Duration.NanosecondsPerSecond;
+                    nanosToAdd -= Duration.NanosecondsPerSecond;
                 }
                 if (secondsToAdd != 0 || nanosToAdd != 0)
                 {
@@ -918,7 +921,7 @@ namespace Google.Protobuf
                 messagePaths.Add(ToSnakeCase(path));
             }
         }
-        
+
         // Ported from src/google/protobuf/util/internal/utility.cc
         private static string ToSnakeCase(string text)
         {
@@ -1035,23 +1038,20 @@ namespace Google.Protobuf
             /// when unknown fields are encountered.
             /// </summary>
             /// <param name="ignoreUnknownFields"><c>true</c> if unknown fields should be ignored when parsing; <c>false</c> to throw an exception.</param>
-            public Settings WithIgnoreUnknownFields(bool ignoreUnknownFields) =>
-                new Settings(RecursionLimit, TypeRegistry, ignoreUnknownFields);
+            public Settings WithIgnoreUnknownFields(bool ignoreUnknownFields) => new(RecursionLimit, TypeRegistry, ignoreUnknownFields);
 
             /// <summary>
             /// Creates a new <see cref="Settings"/> object based on this one, but with the specified recursion limit.
             /// </summary>
             /// <param name="recursionLimit">The new recursion limit.</param>
-            public Settings WithRecursionLimit(int recursionLimit) =>
-                new Settings(recursionLimit, TypeRegistry, IgnoreUnknownFields);
+            public Settings WithRecursionLimit(int recursionLimit) => new(recursionLimit, TypeRegistry, IgnoreUnknownFields);
 
             /// <summary>
             /// Creates a new <see cref="Settings"/> object based on this one, but with the specified type registry.
             /// </summary>
             /// <param name="typeRegistry">The new type registry. Must not be null.</param>
             public Settings WithTypeRegistry(TypeRegistry typeRegistry) =>
-                new Settings(
-                    RecursionLimit,
+                new(RecursionLimit,
                     ProtoPreconditions.CheckNotNull(typeRegistry, nameof(typeRegistry)),
                     IgnoreUnknownFields);
         }

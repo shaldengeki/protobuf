@@ -37,7 +37,6 @@ package protobuf_unittest;
 option java_multiple_files = true;
 option java_outer_classname = "NestedBuilders";
 
-
 message Vehicle {
   optional Engine engine = 1;
   repeated Wheel wheel = 2;
@@ -46,6 +45,11 @@ message Vehicle {
 message Engine {
   optional int32 cylinder = 1;
   optional int32 liters = 2;
+  optional TimingBelt timing_belt = 3;
+}
+
+message TimingBelt {
+  optional int32 number_of_teeth = 1;
 }
 
 message Wheel {

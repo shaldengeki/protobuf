@@ -39,11 +39,13 @@ import java.util.ListIterator;
 import java.util.RandomAccess;
 
 /**
- * An implementation of {@link LazyStringList} that wraps another
- * {@link LazyStringList} such that it cannot be modified via the wrapper.
+ * An implementation of {@link LazyStringList} that wraps another {@link LazyStringList} such that
+ * it cannot be modified via the wrapper.
  *
  * @author jonp@google.com (Jon Perlow)
+ * @deprecated use {@link LazyStringArrayList#makeImmutable} instead.
  */
+@Deprecated
 public class UnmodifiableLazyStringList extends AbstractList<String>
     implements LazyStringList, RandomAccess {
 
@@ -57,7 +59,7 @@ public class UnmodifiableLazyStringList extends AbstractList<String>
   public String get(int index) {
     return list.get(index);
   }
-  
+
   @Override
   public Object getRaw(int index) {
     return list.getRaw(index);
@@ -97,7 +99,7 @@ public class UnmodifiableLazyStringList extends AbstractList<String>
   public void add(byte[] element) {
     throw new UnsupportedOperationException();
   }
-  
+
   @Override
   public void set(int index, byte[] element) {
     throw new UnsupportedOperationException();

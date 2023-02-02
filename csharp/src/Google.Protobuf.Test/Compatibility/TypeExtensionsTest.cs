@@ -29,12 +29,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
+
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-#if !NET35
 namespace Google.Protobuf.Compatibility
 {
     public class TypeExtensionsTest
@@ -59,7 +59,7 @@ namespace Google.Protobuf.Compatibility
         [TestCase(typeof(string), typeof(int), false)]
         [TestCase(typeof(int), typeof(int), true)]
         [TestCase(typeof(ValueType), typeof(int), true)]
-        [TestCase(typeof(long), typeof(int), false)] // 
+        [TestCase(typeof(long), typeof(int), false)] //
         public void IsAssignableFrom(Type target, Type argument, bool expected)
         {
             Assert.AreEqual(expected, TypeExtensions.IsAssignableFrom(target, argument));
@@ -114,4 +114,3 @@ namespace Google.Protobuf.Compatibility
         }
     }
 }
-#endif

@@ -1,10 +1,11 @@
-# See README.txt.
+# See README.md.
 
 .PHONY: all cpp java python clean
 
 all: cpp java python
 
 cpp:    add_person_cpp    list_people_cpp
+dart:   add_person_dart   list_people_dart
 go:     add_person_go     list_people_go
 gotest: add_person_gotest list_people_gotest
 java:   add_person_java   list_people_java
@@ -12,11 +13,14 @@ python: add_person_python list_people_python
 
 clean:
 	rm -f add_person_cpp list_people_cpp add_person_java list_people_java add_person_python list_people_python
-	rm -f javac_middleman AddPerson*.class ListPeople*.class com/example/tutorial/*.class
-	rm -f protoc_middleman addressbook.pb.cc addressbook.pb.h addressbook_pb2.py com/example/tutorial/AddressBookProtos.java
+	rm -f javac_middleman AddPerson*.class ListPeople*.class com/example/tutorial/protos/*.class
+	rm -f protoc_middleman addressbook.pb.cc addressbook.pb.h addressbook_pb2.py com/example/tutorial/protos/*.java
 	rm -f *.pyc
-	rm -f protoc_middleman_go tutorial/*.pb.go add_person_go list_people_go
+	rm -f go/tutorialpb/*.pb.go add_person_go list_people_go
+	rm -f protoc_middleman_dart dart_tutorial/*.pb*.dart
+	rmdir dart_tutorial 2>/dev/null || true
 	rmdir tutorial 2>/dev/null || true
+	rmdir com/example/tutorial/protos 2>/dev/null || true
 	rmdir com/example/tutorial 2>/dev/null || true
 	rmdir com/example 2>/dev/null || true
 	rmdir com 2>/dev/null || true
@@ -25,33 +29,42 @@ protoc_middleman: addressbook.proto
 	protoc $$PROTO_PATH --cpp_out=. --java_out=. --python_out=. addressbook.proto
 	@touch protoc_middleman
 
-protoc_middleman_go: addressbook.proto
-	mkdir -p tutorial # make directory for go package
-	protoc $$PROTO_PATH --go_out=tutorial addressbook.proto
-	@touch protoc_middleman_go
+go/tutorialpb/addressbook.pb.go: addressbook.proto
+	mkdir -p go/tutorialpb # make directory for go package
+	protoc $$PROTO_PATH --go_opt=paths=source_relative --go_out=go/tutorialpb addressbook.proto
+
+protoc_middleman_dart: addressbook.proto
+	mkdir -p dart_tutorial # make directory for the dart package
+	protoc -I ../src/:. --dart_out=dart_tutorial addressbook.proto ../src/google/protobuf/timestamp.proto
+	pub get
+	@touch protoc_middleman_dart
 
 add_person_cpp: add_person.cc protoc_middleman
 	pkg-config --cflags protobuf  # fails if protobuf is not installed
-	c++ add_person.cc addressbook.pb.cc -o add_person_cpp `pkg-config --cflags --libs protobuf`
+	c++ -std=c++14 add_person.cc addressbook.pb.cc -o add_person_cpp `pkg-config --cflags --libs protobuf`
 
 list_people_cpp: list_people.cc protoc_middleman
 	pkg-config --cflags protobuf  # fails if protobuf is not installed
-	c++ list_people.cc addressbook.pb.cc -o list_people_cpp `pkg-config --cflags --libs protobuf`
+	c++ -std=c++14 list_people.cc addressbook.pb.cc -o list_people_cpp `pkg-config --cflags --libs protobuf`
 
-add_person_go: add_person.go protoc_middleman_go
-	go build -o add_person_go add_person.go
+add_person_dart: add_person.dart protoc_middleman_dart
 
-add_person_gotest: add_person_test.go add_person_go
-	go test add_person.go add_person_test.go
+list_people_dart: list_people.dart protoc_middleman_dart
 
-list_people_go: list_people.go protoc_middleman_go
-	go build -o list_people_go list_people.go
+add_person_go: go/cmd/add_person/add_person.go go/tutorialpb/addressbook.pb.go
+	cd go && go build -o ../add_person_go ./cmd/add_person
 
-list_people_gotest: list_people.go list_people_go
-	go test list_people.go list_people_test.go
+add_person_gotest: go/tutorialpb/addressbook.pb.go
+	cd go && go test ./cmd/add_person
+
+list_people_go: go/cmd/list_people/list_people.go go/tutorialpb/addressbook.pb.go
+	cd go && go build -o ../list_people_go ./cmd/list_people
+
+list_people_gotest: go/tutorialpb/addressbook.pb.go
+	cd go && go test ./cmd/list_people
 
 javac_middleman: AddPerson.java ListPeople.java protoc_middleman
-	javac -cp $$CLASSPATH AddPerson.java ListPeople.java com/example/tutorial/AddressBookProtos.java
+	javac -cp $$CLASSPATH AddPerson.java ListPeople.java com/example/tutorial/protos/*.java
 	@touch javac_middleman
 
 add_person_java: javac_middleman

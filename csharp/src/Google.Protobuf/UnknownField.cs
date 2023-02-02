@@ -30,9 +30,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
 
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using Google.Protobuf.Collections;
 
 namespace Google.Protobuf
@@ -55,6 +53,7 @@ namespace Google.Protobuf
         private List<uint> fixed32List;
         private List<ulong> fixed64List;
         private List<ByteString> lengthDelimitedList;
+        private List<UnknownFieldSet> groupList;
 
         /// <summary>
         /// Creates a new UnknownField.
@@ -72,12 +71,12 @@ namespace Google.Protobuf
             {
                 return true;
             }
-            UnknownField otherField = other as UnknownField;
-            return otherField != null
-                   && Lists.Equals(varintList, otherField.varintList)
-                   && Lists.Equals(fixed32List, otherField.fixed32List)
-                   && Lists.Equals(fixed64List, otherField.fixed64List)
-                   && Lists.Equals(lengthDelimitedList, otherField.lengthDelimitedList);
+            return other is UnknownField otherField
+                && Lists.Equals(varintList, otherField.varintList)
+                && Lists.Equals(fixed32List, otherField.fixed32List)
+                && Lists.Equals(fixed64List, otherField.fixed64List)
+                && Lists.Equals(lengthDelimitedList, otherField.lengthDelimitedList)
+                && Lists.Equals(groupList, otherField.groupList);
         }
 
         /// <summary>
@@ -90,6 +89,7 @@ namespace Google.Protobuf
             hash = hash * 47 + Lists.GetHashCode(fixed32List);
             hash = hash * 47 + Lists.GetHashCode(fixed64List);
             hash = hash * 47 + Lists.GetHashCode(lengthDelimitedList);
+            hash = hash * 47 + Lists.GetHashCode(groupList);
             return hash;
         }
 
@@ -98,8 +98,8 @@ namespace Google.Protobuf
         /// <paramref name="output"/>
         /// </summary>
         /// <param name="fieldNumber">The unknown field number.</param>
-        /// <param name="output">The CodedOutputStream to write to.</param>
-        internal void WriteTo(int fieldNumber, CodedOutputStream output)
+        /// <param name="output">The write context to write to.</param>
+        internal void WriteTo(int fieldNumber, ref WriteContext output)
         {
             if (varintList != null)
             {
@@ -133,6 +133,15 @@ namespace Google.Protobuf
                     output.WriteBytes(value);
                 }
             }
+            if (groupList != null)
+            {
+                foreach (UnknownFieldSet value in groupList)
+                {
+                    output.WriteTag(fieldNumber, WireFormat.WireType.StartGroup);
+                    value.WriteTo(ref output);
+                    output.WriteTag(fieldNumber, WireFormat.WireType.EndGroup);
+                }
+            }
         }
 
         /// <summary>
@@ -159,13 +168,21 @@ namespace Google.Protobuf
             {
                 result += CodedOutputStream.ComputeTagSize(fieldNumber) * fixed64List.Count;
                 result += CodedOutputStream.ComputeFixed64Size(1) * fixed64List.Count;
-            }                
+            }
             if (lengthDelimitedList != null)
             {
                 result += CodedOutputStream.ComputeTagSize(fieldNumber) * lengthDelimitedList.Count;
                 foreach (ByteString value in lengthDelimitedList)
                 {
                     result += CodedOutputStream.ComputeBytesSize(value);
+                }
+            }
+            if (groupList != null)
+            {
+                result += CodedOutputStream.ComputeTagSize(fieldNumber) * 2 * groupList.Count;
+                foreach (UnknownFieldSet value in groupList)
+                {
+                    result += value.CalculateSize();
                 }
             }
             return result;
@@ -182,19 +199,20 @@ namespace Google.Protobuf
             fixed32List = AddAll(fixed32List, other.fixed32List);
             fixed64List = AddAll(fixed64List, other.fixed64List);
             lengthDelimitedList = AddAll(lengthDelimitedList, other.lengthDelimitedList);
+            groupList = AddAll(groupList, other.groupList);
             return this;
         }
 
         /// <summary>
         /// Returns a new list containing all of the given specified values from
         /// both the <paramref name="current"/> and <paramref name="extras"/> lists.
-        /// If <paramref name="current" /> is null and <paramref name="extras"/> is empty,
+        /// If <paramref name="current" /> is null and <paramref name="extras"/> is null or empty,
         /// null is returned. Otherwise, either a new list is created (if <paramref name="current" />
         /// is null) or the elements of <paramref name="extras"/> are added to <paramref name="current" />.
         /// </summary>
         private static List<T> AddAll<T>(List<T> current, IList<T> extras)
         {
-            if (extras.Count == 0)
+            if (extras == null || extras.Count == 0)
             {
                 return current;
             }
@@ -242,6 +260,12 @@ namespace Google.Protobuf
         internal UnknownField AddLengthDelimited(ByteString value)
         {
             lengthDelimitedList = Add(lengthDelimitedList, value);
+            return this;
+        }
+
+        internal UnknownField AddGroup(UnknownFieldSet value)
+        {
+            groupList = Add(groupList, value);
             return this;
         }
 

@@ -34,11 +34,11 @@
 
 #import "GPBMessage.h"
 
-#import "google/protobuf/MapUnittest.pbobjc.h"
-#import "google/protobuf/Unittest.pbobjc.h"
-#import "google/protobuf/UnittestPreserveUnknownEnum.pbobjc.h"
-#import "google/protobuf/UnittestRuntimeProto2.pbobjc.h"
-#import "google/protobuf/UnittestRuntimeProto3.pbobjc.h"
+#import "objectivec/Tests/MapUnittest.pbobjc.h"
+#import "objectivec/Tests/Unittest.pbobjc.h"
+#import "objectivec/Tests/UnittestPreserveUnknownEnum.pbobjc.h"
+#import "objectivec/Tests/UnittestRuntimeProto2.pbobjc.h"
+#import "objectivec/Tests/UnittestRuntimeProto3.pbobjc.h"
 
 @interface MessageMergeTests : GPBTestCase
 @end
@@ -197,9 +197,8 @@
   // Known value.
 
   src.e = UnknownEnumsMyEnum_Bar;
-  src.repeatedEArray =
-      [GPBEnumArray arrayWithValidationFunction:UnknownEnumsMyEnum_IsValidValue
-                                       rawValue:UnknownEnumsMyEnum_Bar];
+  src.repeatedEArray = [GPBEnumArray arrayWithValidationFunction:UnknownEnumsMyEnum_IsValidValue
+                                                        rawValue:UnknownEnumsMyEnum_Bar];
   src.repeatedPackedEArray =
       [GPBEnumArray arrayWithValidationFunction:UnknownEnumsMyEnum_IsValidValue
                                        rawValue:UnknownEnumsMyEnum_Bar];
@@ -211,8 +210,7 @@
   XCTAssertEqual(dst.repeatedEArray.count, 1U);
   XCTAssertEqual([dst.repeatedEArray valueAtIndex:0], UnknownEnumsMyEnum_Bar);
   XCTAssertEqual(dst.repeatedPackedEArray.count, 1U);
-  XCTAssertEqual([dst.repeatedPackedEArray valueAtIndex:0],
-                 UnknownEnumsMyEnum_Bar);
+  XCTAssertEqual([dst.repeatedPackedEArray valueAtIndex:0], UnknownEnumsMyEnum_Bar);
   XCTAssertEqual(dst.oneofE1, UnknownEnumsMyEnum_Bar);
 
   // Unknown value.
@@ -220,9 +218,8 @@
   const int32_t kUnknownValue = 666;
 
   SetUnknownEnumsMyMessage_E_RawValue(src, kUnknownValue);
-  src.repeatedEArray =
-      [GPBEnumArray arrayWithValidationFunction:UnknownEnumsMyEnum_IsValidValue
-                                       rawValue:kUnknownValue];
+  src.repeatedEArray = [GPBEnumArray arrayWithValidationFunction:UnknownEnumsMyEnum_IsValidValue
+                                                        rawValue:kUnknownValue];
   src.repeatedPackedEArray =
       [GPBEnumArray arrayWithValidationFunction:UnknownEnumsMyEnum_IsValidValue
                                        rawValue:kUnknownValue];
@@ -238,13 +235,11 @@
                  UnknownEnumsMyEnum_GPBUnrecognizedEnumeratorValue);
   XCTAssertEqual([dst.repeatedEArray rawValueAtIndex:1], kUnknownValue);
   XCTAssertEqual(dst.repeatedPackedEArray.count, 2U);
-  XCTAssertEqual([dst.repeatedPackedEArray valueAtIndex:0],
-                 UnknownEnumsMyEnum_Bar);
+  XCTAssertEqual([dst.repeatedPackedEArray valueAtIndex:0], UnknownEnumsMyEnum_Bar);
   XCTAssertEqual([dst.repeatedPackedEArray valueAtIndex:1],
                  UnknownEnumsMyEnum_GPBUnrecognizedEnumeratorValue);
   XCTAssertEqual([dst.repeatedPackedEArray rawValueAtIndex:1], kUnknownValue);
-  XCTAssertEqual(dst.oneofE1,
-                 UnknownEnumsMyEnum_GPBUnrecognizedEnumeratorValue);
+  XCTAssertEqual(dst.oneofE1, UnknownEnumsMyEnum_GPBUnrecognizedEnumeratorValue);
   XCTAssertEqual(UnknownEnumsMyMessage_OneofE1_RawValue(dst), kUnknownValue);
 }
 
@@ -257,6 +252,9 @@
   //
 
   dst.oneofEnum = Message2_Enum_Bar;
+
+  // Disable clang-format for the macros.
+  // clang-format off
 
 //%PDDM-DEFINE MERGE2_TEST(SET_NAME, SET_VALUE, CLEARED_NAME, CLEARED_DEFAULT)
 //%  src.oneof##SET_NAME = SET_VALUE;
@@ -393,6 +391,8 @@
 
 //%PDDM-EXPAND-END (14 expansions)
 
+  // clang-format on
+
   NSString *oneofStringDefault = @"string";
   NSData *oneofBytesDefault = [@"data" dataUsingEncoding:NSUTF8StringEncoding];
 
@@ -405,8 +405,7 @@
   src.oneofBytes = [@"bar" dataUsingEncoding:NSUTF8StringEncoding];
   [dst mergeFrom:src];
   XCTAssertEqual(dst.oOneOfCase, Message2_O_OneOfCase_OneofBytes);
-  XCTAssertEqualObjects(dst.oneofBytes,
-                        [@"bar" dataUsingEncoding:NSUTF8StringEncoding]);
+  XCTAssertEqualObjects(dst.oneofBytes, [@"bar" dataUsingEncoding:NSUTF8StringEncoding]);
   XCTAssertEqualObjects(dst.oneofString, oneofStringDefault);
 
   Message2_OneofGroup *group = [Message2_OneofGroup message];
@@ -416,7 +415,7 @@
   XCTAssertEqual(dst.oOneOfCase, Message2_O_OneOfCase_OneofGroup);
   Message2_OneofGroup *mergedGroup = [[dst.oneofGroup retain] autorelease];
   XCTAssertNotNil(mergedGroup);
-  XCTAssertNotEqual(mergedGroup, group);  // Pointer comparision.
+  XCTAssertNotEqual(mergedGroup, group);  // Pointer comparison.
   XCTAssertEqualObjects(mergedGroup, group);
   XCTAssertEqualObjects(dst.oneofBytes, oneofBytesDefault);
 
@@ -427,10 +426,10 @@
   XCTAssertEqual(dst.oOneOfCase, Message2_O_OneOfCase_OneofMessage);
   Message2 *mergedSubMessage = [[dst.oneofMessage retain] autorelease];
   XCTAssertNotNil(mergedSubMessage);
-  XCTAssertNotEqual(mergedSubMessage, subMessage);  // Pointer comparision.
+  XCTAssertNotEqual(mergedSubMessage, subMessage);  // Pointer comparison.
   XCTAssertEqualObjects(mergedSubMessage, subMessage);
   XCTAssertNotNil(dst.oneofGroup);
-  XCTAssertNotEqual(dst.oneofGroup, mergedGroup);  // Pointer comparision.
+  XCTAssertNotEqual(dst.oneofGroup, mergedGroup);  // Pointer comparison.
 
   // Back to something else to make sure message clears out ok.
 
@@ -439,7 +438,7 @@
   XCTAssertEqual(dst.oOneOfCase, Message2_O_OneOfCase_OneofInt32);
   XCTAssertNotNil(dst.oneofMessage);
   XCTAssertNotEqual(dst.oneofMessage,
-                    mergedSubMessage);  // Pointer comparision.
+                    mergedSubMessage);  // Pointer comparison.
 
   //
   // Test merging in to message/group when they already had something.
@@ -452,9 +451,9 @@
   [dst mergeFrom:src];
   XCTAssertEqual(dst.oOneOfCase, Message2_O_OneOfCase_OneofGroup);
   // Shouldn't have been a new object.
-  XCTAssertEqual(dst.oneofGroup, mergedGroup);  // Pointer comparision.
-  XCTAssertEqual(dst.oneofGroup.a, 666);        // Pointer comparision.
-  XCTAssertEqual(dst.oneofGroup.b, 888);        // Pointer comparision.
+  XCTAssertEqual(dst.oneofGroup, mergedGroup);  // Pointer comparison.
+  XCTAssertEqual(dst.oneofGroup.a, 666);        // Pointer comparison.
+  XCTAssertEqual(dst.oneofGroup.b, 888);        // Pointer comparison.
 
   src.oneofMessage = subMessage;
   mergedSubMessage = [Message2 message];
@@ -463,9 +462,9 @@
   [dst mergeFrom:src];
   XCTAssertEqual(dst.oOneOfCase, Message2_O_OneOfCase_OneofMessage);
   // Shouldn't have been a new object.
-  XCTAssertEqual(dst.oneofMessage, mergedSubMessage);   // Pointer comparision.
-  XCTAssertEqual(dst.oneofMessage.optionalInt32, 777);  // Pointer comparision.
-  XCTAssertEqual(dst.oneofMessage.optionalInt64, 999);  // Pointer comparision.
+  XCTAssertEqual(dst.oneofMessage, mergedSubMessage);   // Pointer comparison.
+  XCTAssertEqual(dst.oneofMessage.optionalInt32, 777);  // Pointer comparison.
+  XCTAssertEqual(dst.oneofMessage.optionalInt64, 999);  // Pointer comparison.
 }
 
 - (void)testProto3MergeOneof {
@@ -477,6 +476,9 @@
   //
 
   dst.oneofEnum = Message3_Enum_Bar;
+
+  // Disable clang-format for the macros.
+  // clang-format off
 
 //%PDDM-DEFINE MERGE3_TEST(SET_NAME, SET_VALUE, CLEARED_NAME, CLEARED_DEFAULT)
 //%  src.oneof##SET_NAME = SET_VALUE;
@@ -613,6 +615,8 @@
 
 //%PDDM-EXPAND-END (14 expansions)
 
+  // clang-format on
+
   NSString *oneofStringDefault = @"";
   NSData *oneofBytesDefault = [NSData data];
 
@@ -625,10 +629,8 @@
   src.oneofBytes = [@"bar" dataUsingEncoding:NSUTF8StringEncoding];
   [dst mergeFrom:src];
   XCTAssertEqual(dst.oOneOfCase, Message3_O_OneOfCase_OneofBytes);
-  XCTAssertEqualObjects(dst.oneofBytes,
-                        [@"bar" dataUsingEncoding:NSUTF8StringEncoding]);
+  XCTAssertEqualObjects(dst.oneofBytes, [@"bar" dataUsingEncoding:NSUTF8StringEncoding]);
   XCTAssertEqualObjects(dst.oneofString, oneofStringDefault);
-
 
   Message3 *subMessage = [Message3 message];
   subMessage.optionalInt32 = 777;
@@ -637,7 +639,7 @@
   XCTAssertEqual(dst.oOneOfCase, Message3_O_OneOfCase_OneofMessage);
   Message3 *mergedSubMessage = [[dst.oneofMessage retain] autorelease];
   XCTAssertNotNil(mergedSubMessage);
-  XCTAssertNotEqual(mergedSubMessage, subMessage);  // Pointer comparision.
+  XCTAssertNotEqual(mergedSubMessage, subMessage);  // Pointer comparison.
   XCTAssertEqualObjects(mergedSubMessage, subMessage);
   XCTAssertEqualObjects(dst.oneofBytes, oneofBytesDefault);
 
@@ -648,7 +650,7 @@
   XCTAssertEqual(dst.oOneOfCase, Message3_O_OneOfCase_OneofInt32);
   XCTAssertNotNil(dst.oneofMessage);
   XCTAssertNotEqual(dst.oneofMessage,
-                    mergedSubMessage);  // Pointer comparision.
+                    mergedSubMessage);  // Pointer comparison.
 
   //
   // Test merging in to message when they already had something.
@@ -661,9 +663,9 @@
   [dst mergeFrom:src];
   XCTAssertEqual(dst.oOneOfCase, Message3_O_OneOfCase_OneofMessage);
   // Shouldn't have been a new object.
-  XCTAssertEqual(dst.oneofMessage, mergedSubMessage);   // Pointer comparision.
-  XCTAssertEqual(dst.oneofMessage.optionalInt32, 777);  // Pointer comparision.
-  XCTAssertEqual(dst.oneofMessage.optionalInt64, 999);  // Pointer comparision.
+  XCTAssertEqual(dst.oneofMessage, mergedSubMessage);   // Pointer comparison.
+  XCTAssertEqual(dst.oneofMessage.optionalInt32, 777);  // Pointer comparison.
+  XCTAssertEqual(dst.oneofMessage.optionalInt64, 999);  // Pointer comparison.
 }
 
 #pragma mark - Subset from from map_tests.cc
